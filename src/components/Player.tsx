@@ -12,11 +12,12 @@ export default function Player() {
   const [activeLevel, setActiveLevel] = createSignal(-1);
   const [ttff, setTtff] = createSignal(0);
   const [rebuffer, setRebuffer] = createSignal(0);
-
+  const [bufferHealth, setBufferHealth] = createSignal(0);
+  const [bandWidth, setBandWidth] = createSignal(0);
   let videoRef!: HTMLVideoElement;
   let playClickedAt = 0;
   let hls!: Hls;
-  const streamUrl = "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8";
+  const streamUrl = "https://denisaaionescu.github.io/bibble-hls/master.m3u8";
   onMount(() => {
     hls = new Hls();
     hls.loadSource(streamUrl);
@@ -26,6 +27,9 @@ export default function Player() {
     });
     hls.on(Hls.Events.LEVEL_SWITCHED, (event, data) => {
       setActiveLevel(data.level);
+    });
+    hls.on(Hls.Events.FRAG_LOADED, (event, data) => {
+      setBandWidth(hls.bandwidthEstimate);
     });
     onCleanup(() => {
       hls.destroy();
@@ -56,7 +60,14 @@ export default function Player() {
           setDuration(e.currentTarget.duration);
         }}
         onError={() => setStatus("Error")}
-        onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
+        onTimeUpdate={(e) => {
+          const video = e.currentTarget;
+          setCurrentTime(video.currentTime);
+          if (video.buffered.length > 0) {
+            const bufferedEnd = video.buffered.end(video.buffered.length - 1);
+            setBufferHealth(bufferedEnd - video.currentTime);
+          }
+        }}
         onDurationChange={(e) => setDuration(e.currentTarget.duration)}
       ></video>
       <p>{status()}</p>
@@ -78,6 +89,8 @@ export default function Player() {
       <p>Current quality: {levels()[activeLevel()]?.height}p</p>
       <p>TTFF {Math.round(ttff())}ms</p>
       <p>Rebuffers: {rebuffer()}</p>
+      <p>Buffer: {bufferHealth().toFixed(1)}s</p>
+      <p>Speed: {(bandWidth() / 1_000_000).toFixed(1)} Mbps</p>
     </>
   );
 }
