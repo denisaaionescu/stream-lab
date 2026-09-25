@@ -10,7 +10,11 @@ export default function Player() {
   const [duration, setDuration] = createSignal(0);
   const [levels, setLevels] = createSignal<Level[]>([]);
   const [activeLevel, setActiveLevel] = createSignal(-1);
+  const [ttff, setTtff] = createSignal(0);
+  const [rebuffer, setRebuffer] = createSignal(0);
+
   let videoRef!: HTMLVideoElement;
+  let playClickedAt = 0;
   let hls!: Hls;
   const streamUrl = "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8";
   onMount(() => {
@@ -33,9 +37,19 @@ export default function Player() {
         ref={videoRef}
         controls
         width="1070"
-        onPlaying={() => setStatus("Playing")}
+        onPlay={() => (playClickedAt = performance.now())}
+        onPlaying={() => {
+          setStatus("Playing");
+          if (ttff() === 0) {
+            setTtff(performance.now() - playClickedAt);
+          }
+        }}
         onPause={() => setStatus("Pause")}
-        onWaiting={() => setStatus("Waiting")}
+        onWaiting={(e) => {
+          setStatus("Waiting");
+          if (!e.currentTarget.seeking && ttff() !== 0)
+            setRebuffer(rebuffer() + 1);
+        }}
         onEnded={() => setStatus("Ended")}
         onLoadedMetadata={(e) => {
           setStatus("Ready");
@@ -62,6 +76,8 @@ export default function Player() {
         </For>
       </select>
       <p>Current quality: {levels()[activeLevel()]?.height}p</p>
+      <p>TTFF {Math.round(ttff())}ms</p>
+      <p>Rebuffers: {rebuffer()}</p>
     </>
   );
 }
