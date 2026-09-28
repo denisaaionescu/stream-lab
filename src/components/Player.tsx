@@ -6,6 +6,7 @@ import SegmentList from "./SegmentList";
 import styles from "./Player.module.css";
 import QualitySelect from "./QualitySelect";
 import ManifestViewer from "./ManifestViewer";
+import MoqPlayer from "./MoqPlayer";
 type PlayerStatus =
   "Loading" | "Playing" | "Pause" | "Waiting" | "Ended" | "Ready" | "Error";
 
@@ -138,6 +139,7 @@ export default function Player() {
           }}
           onDurationChange={(e) => setDuration(e.currentTarget.duration)}
         ></video>
+        <MoqPlayer />
         <div class={styles.transport}>
           <p class={styles.status}>
             <span class={styles.statusLabel}>{status()}</span>
