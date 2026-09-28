@@ -7,6 +7,8 @@ declare module "solid-js" {
         url?: string;
         name?: string;
         children?: JSX.Element;
+        paused?: boolean;
+        muted?: boolean;
       };
     }
   }
