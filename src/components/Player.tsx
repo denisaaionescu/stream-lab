@@ -1,8 +1,18 @@
-import { createSignal, onMount, onCleanup, For } from "solid-js";
+import { createSignal, onMount, onCleanup } from "solid-js";
 import Hls from "hls.js";
 import { type Level } from "hls.js";
+import StatsPanel from "./StatsPanel";
+import SegmentList from "./SegmentList";
+import QualitySelect from "./QualitySelect";
 type PlayerStatus =
   "Loading" | "Playing" | "Pause" | "Waiting" | "Ended" | "Ready" | "Error";
+
+export type SegmentInfo = {
+  sn: number;
+  level: number;
+  duration: number;
+  size: number;
+};
 
 export default function Player() {
   const [status, setStatus] = createSignal<PlayerStatus>("Loading");
@@ -14,29 +24,69 @@ export default function Player() {
   const [rebuffer, setRebuffer] = createSignal(0);
   const [bufferHealth, setBufferHealth] = createSignal(0);
   const [bandWidth, setBandWidth] = createSignal(0);
+  const [supported, setSupported] = createSignal<boolean[]>([]);
+  const [videoUrl, setVideoUrl] = createSignal(
+    "https://denisaaionescu.github.io/bibble-hls/master.m3u8",
+  );
+  const [segment, setSegment] = createSignal<SegmentInfo[]>([]);
   let videoRef!: HTMLVideoElement;
   let playClickedAt = 0;
   let hls!: Hls;
-  const streamUrl = "https://denisaaionescu.github.io/bibble-hls/master.m3u8";
+  const loadStream = (url: string) => {
+    setTtff(0);
+    setRebuffer(0);
+    setBufferHealth(0);
+    setBandWidth(0);
+    setStatus("Loading");
+    setActiveLevel(-1);
+    hls.loadSource(url);
+    setSegment([]);
+    setSupported([]);
+  };
   onMount(() => {
     hls = new Hls();
-    hls.loadSource(streamUrl);
+    loadStream(videoUrl());
     hls.attachMedia(videoRef);
-    hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
+    hls.on(Hls.Events.MANIFEST_PARSED, async (_event, data) => {
       setLevels(data.levels);
+      const results: boolean[] = [];
+      for (const level of data.levels) {
+        const answer = await VideoDecoder.isConfigSupported({
+          codec: level.videoCodec ?? "",
+        });
+        results.push(answer.supported ?? false);
+      }
+      setSupported(results);
     });
-    hls.on(Hls.Events.LEVEL_SWITCHED, (event, data) => {
+    hls.on(Hls.Events.LEVEL_SWITCHED, (_event, data) => {
       setActiveLevel(data.level);
     });
-    hls.on(Hls.Events.FRAG_LOADED, (event, data) => {
+    hls.on(Hls.Events.FRAG_LOADED, (_event, data) => {
       setBandWidth(hls.bandwidthEstimate);
+      const seg: SegmentInfo = {
+        sn: Number(data.frag.sn),
+        level: data.frag.level,
+        duration: data.frag.duration,
+        size: data.frag.stats.total,
+      };
+      setSegment([...segment(), seg].slice(-10));
     });
     onCleanup(() => {
       hls.destroy();
     });
   });
+
   return (
     <>
+      <input
+        type="text"
+        value={videoUrl()}
+        placeholder="URL link for your video"
+        onInput={(e) => setVideoUrl(e.currentTarget.value)}
+      />
+      <button type="submit" onClick={() => loadStream(videoUrl())}>
+        Load
+      </button>
       <video
         ref={videoRef}
         controls
@@ -74,23 +124,19 @@ export default function Player() {
       <p>
         {currentTime().toFixed(1)}s - {duration().toFixed(1)}s
       </p>
-      <select
-        onChange={(e) => (hls.currentLevel = Number(e.currentTarget.value))}
-      >
-        <option value="-1">Auto</option>
-        <For each={levels()}>
-          {(level, index) => (
-            <option value={index()}>
-              {level.height}p - {level.bitrate}
-            </option>
-          )}
-        </For>
-      </select>
-      <p>Current quality: {levels()[activeLevel()]?.height}p</p>
-      <p>TTFF {Math.round(ttff())}ms</p>
-      <p>Rebuffers: {rebuffer()}</p>
-      <p>Buffer: {bufferHealth().toFixed(1)}s</p>
-      <p>Speed: {(bandWidth() / 1_000_000).toFixed(1)} Mbps</p>
+      <QualitySelect
+        levels={levels()}
+        supported={supported()}
+        onSelect={(index) => (hls.currentLevel = index)}
+      />
+      <StatsPanel
+        quality={levels()[activeLevel()]?.height}
+        ttff={ttff()}
+        rebuffer={rebuffer()}
+        bufferHealth={bufferHealth()}
+        bandWidth={bandWidth()}
+      />
+      <SegmentList segments={segment()} levels={levels()} />
     </>
   );
 }
