@@ -1,5 +1,6 @@
 import type { Level } from "hls.js";
 import { For } from "solid-js";
+import styles from "./QualitySelect.module.css";
 
 type QualitySelectProps = {
   levels: Level[];
@@ -9,8 +10,12 @@ type QualitySelectProps = {
 
 export default function QualitySelect(props: QualitySelectProps) {
   return (
-    <>
-      <select onChange={(e) => props.onSelect(Number(e.currentTarget.value))}>
+    <label class={styles.field}>
+      <span class={styles.label}>Quality</span>
+      <select
+        class={styles.select}
+        onChange={(e) => props.onSelect(Number(e.currentTarget.value))}
+      >
         <option value="-1">Auto</option>
         <For each={props.levels}>
           {(level, index) => (
@@ -21,6 +26,6 @@ export default function QualitySelect(props: QualitySelectProps) {
           )}
         </For>
       </select>
-    </>
+    </label>
   );
 }

@@ -3,6 +3,7 @@ import Hls from "hls.js";
 import { type Level } from "hls.js";
 import StatsPanel from "./StatsPanel";
 import SegmentList from "./SegmentList";
+import styles from "./Player.module.css";
 import QualitySelect from "./QualitySelect";
 type PlayerStatus =
   "Loading" | "Playing" | "Pause" | "Waiting" | "Ended" | "Ready" | "Error";
@@ -77,20 +78,33 @@ export default function Player() {
   });
 
   return (
-    <>
-      <input
-        type="text"
-        value={videoUrl()}
-        placeholder="URL link for your video"
-        onInput={(e) => setVideoUrl(e.currentTarget.value)}
-      />
-      <button type="submit" onClick={() => loadStream(videoUrl())}>
-        Load
-      </button>
+    <div class={styles.layout}>
+      <header class={styles.header}>
+        <h1 class={styles.title}>Stream Lab</h1>
+        <div class={styles.urlBar}>
+          <input
+            class={styles.urlInput}
+            type="text"
+            value={videoUrl()}
+            placeholder="Paste an .m3u8 link"
+            aria-label="Stream URL"
+            onInput={(e) => setVideoUrl(e.currentTarget.value)}
+          />
+          <button
+            class={styles.loadButton}
+            type="button"
+            onClick={() => loadStream(videoUrl())}
+          >
+            Load
+          </button>
+        </div>
+      </header>
+
+      <section class={styles.stage}>
       <video
+        class={styles.video}
         ref={videoRef}
         controls
-        width="1070"
         onPlay={() => (playClickedAt = performance.now())}
         onPlaying={() => {
           setStatus("Playing");
@@ -120,23 +134,31 @@ export default function Player() {
         }}
         onDurationChange={(e) => setDuration(e.currentTarget.duration)}
       ></video>
-      <p>{status()}</p>
-      <p>
-        {currentTime().toFixed(1)}s - {duration().toFixed(1)}s
-      </p>
-      <QualitySelect
-        levels={levels()}
-        supported={supported()}
-        onSelect={(index) => (hls.currentLevel = index)}
-      />
-      <StatsPanel
-        quality={levels()[activeLevel()]?.height}
-        ttff={ttff()}
-        rebuffer={rebuffer()}
-        bufferHealth={bufferHealth()}
-        bandWidth={bandWidth()}
-      />
-      <SegmentList segments={segment()} levels={levels()} />
-    </>
+      <div class={styles.transport}>
+        <p class={styles.status}>
+          <span class={styles.statusLabel}>{status()}</span>
+          <span class={styles.time}>
+            {currentTime().toFixed(1)} / {duration().toFixed(1)} s
+          </span>
+        </p>
+        <QualitySelect
+          levels={levels()}
+          supported={supported()}
+          onSelect={(index) => (hls.currentLevel = index)}
+        />
+      </div>
+      </section>
+
+      <aside class={styles.side}>
+        <StatsPanel
+          quality={levels()[activeLevel()]?.height}
+          ttff={ttff()}
+          rebuffer={rebuffer()}
+          bufferHealth={bufferHealth()}
+          bandWidth={bandWidth()}
+        />
+        <SegmentList segments={segment()} levels={levels()} />
+      </aside>
+    </div>
   );
 }

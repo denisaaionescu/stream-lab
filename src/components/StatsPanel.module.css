@@ -1,0 +1,29 @@
+.panel {
+  padding: 16px 20px;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+}
+
+.heading {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 8px 0;
+  border-top: 1px solid var(--rule);
+}
+
+.row dt {
+  color: var(--muted);
+}
+
+.row dd {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
