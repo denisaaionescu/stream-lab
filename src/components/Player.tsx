@@ -5,6 +5,7 @@ import StatsPanel from "./StatsPanel";
 import SegmentList from "./SegmentList";
 import styles from "./Player.module.css";
 import QualitySelect from "./QualitySelect";
+import ManifestViewer from "./ManifestViewer";
 type PlayerStatus =
   "Loading" | "Playing" | "Pause" | "Waiting" | "Ended" | "Ready" | "Error";
 
@@ -26,6 +27,9 @@ export default function Player() {
   const [bufferHealth, setBufferHealth] = createSignal(0);
   const [bandWidth, setBandWidth] = createSignal(0);
   const [supported, setSupported] = createSignal<boolean[]>([]);
+  const [loadedUrl, setLoadedUrl] = createSignal(
+    "https://denisaaionescu.github.io/bibble-hls/master.m3u8",
+  );
   const [videoUrl, setVideoUrl] = createSignal(
     "https://denisaaionescu.github.io/bibble-hls/master.m3u8",
   );
@@ -43,6 +47,7 @@ export default function Player() {
     hls.loadSource(url);
     setSegment([]);
     setSupported([]);
+    setLoadedUrl(url);
   };
   onMount(() => {
     hls = new Hls();
@@ -80,7 +85,6 @@ export default function Player() {
   return (
     <div class={styles.layout}>
       <header class={styles.header}>
-        <h1 class={styles.title}>Stream Lab</h1>
         <div class={styles.urlBar}>
           <input
             class={styles.urlInput}
@@ -101,53 +105,54 @@ export default function Player() {
       </header>
 
       <section class={styles.stage}>
-      <video
-        class={styles.video}
-        ref={videoRef}
-        controls
-        onPlay={() => (playClickedAt = performance.now())}
-        onPlaying={() => {
-          setStatus("Playing");
-          if (ttff() === 0) {
-            setTtff(performance.now() - playClickedAt);
-          }
-        }}
-        onPause={() => setStatus("Pause")}
-        onWaiting={(e) => {
-          setStatus("Waiting");
-          if (!e.currentTarget.seeking && ttff() !== 0)
-            setRebuffer(rebuffer() + 1);
-        }}
-        onEnded={() => setStatus("Ended")}
-        onLoadedMetadata={(e) => {
-          setStatus("Ready");
-          setDuration(e.currentTarget.duration);
-        }}
-        onError={() => setStatus("Error")}
-        onTimeUpdate={(e) => {
-          const video = e.currentTarget;
-          setCurrentTime(video.currentTime);
-          if (video.buffered.length > 0) {
-            const bufferedEnd = video.buffered.end(video.buffered.length - 1);
-            setBufferHealth(bufferedEnd - video.currentTime);
-          }
-        }}
-        onDurationChange={(e) => setDuration(e.currentTarget.duration)}
-      ></video>
-      <div class={styles.transport}>
-        <p class={styles.status}>
-          <span class={styles.statusLabel}>{status()}</span>
-          <span class={styles.time}>
-            {currentTime().toFixed(1)} / {duration().toFixed(1)} s
-          </span>
-        </p>
-        <QualitySelect
-          levels={levels()}
-          supported={supported()}
-          onSelect={(index) => (hls.currentLevel = index)}
-        />
-      </div>
+        <video
+          class={styles.video}
+          ref={videoRef}
+          controls
+          onPlay={() => (playClickedAt = performance.now())}
+          onPlaying={() => {
+            setStatus("Playing");
+            if (ttff() === 0) {
+              setTtff(performance.now() - playClickedAt);
+            }
+          }}
+          onPause={() => setStatus("Pause")}
+          onWaiting={(e) => {
+            setStatus("Waiting");
+            if (!e.currentTarget.seeking && ttff() !== 0)
+              setRebuffer(rebuffer() + 1);
+          }}
+          onEnded={() => setStatus("Ended")}
+          onLoadedMetadata={(e) => {
+            setStatus("Ready");
+            setDuration(e.currentTarget.duration);
+          }}
+          onError={() => setStatus("Error")}
+          onTimeUpdate={(e) => {
+            const video = e.currentTarget;
+            setCurrentTime(video.currentTime);
+            if (video.buffered.length > 0) {
+              const bufferedEnd = video.buffered.end(video.buffered.length - 1);
+              setBufferHealth(bufferedEnd - video.currentTime);
+            }
+          }}
+          onDurationChange={(e) => setDuration(e.currentTarget.duration)}
+        ></video>
+        <div class={styles.transport}>
+          <p class={styles.status}>
+            <span class={styles.statusLabel}>{status()}</span>
+            <span class={styles.time}>
+              {currentTime().toFixed(1)} / {duration().toFixed(1)} s
+            </span>
+          </p>
+          <QualitySelect
+            levels={levels()}
+            supported={supported()}
+            onSelect={(index) => (hls.currentLevel = index)}
+          />
+        </div>
       </section>
+      <ManifestViewer url={loadedUrl()} />
 
       <aside class={styles.side}>
         <StatsPanel

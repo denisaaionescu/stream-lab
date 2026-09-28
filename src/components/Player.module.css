@@ -18,14 +18,6 @@
   flex-wrap: wrap;
 }
 
-.title {
-  font-size: 44px;
-  font-weight: 700;
-  font-stretch: 75%;
-  line-height: 1;
-  letter-spacing: -0.01em;
-}
-
 .urlBar {
   display: flex;
   flex: 1;
