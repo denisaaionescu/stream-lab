@@ -1,3 +1,4 @@
+import type MoqWatch from "@moq/watch/element";
 import "solid-js";
 
 declare module "solid-js" {
@@ -9,6 +10,7 @@ declare module "solid-js" {
         children?: JSX.Element;
         paused?: boolean;
         muted?: boolean;
+        ref?: MoqWatch;
       };
     }
   }

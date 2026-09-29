@@ -8,11 +8,9 @@ type SegmentListProps = {
   levels: Level[];
 };
 
-// Fiecare calitate primește culoarea ei (definite în index.css: --q0 ... --q5)
 const qualityColor = (level: number) => `var(--q${level % 6})`;
 
 export default function SegmentList(props: SegmentListProps) {
-  // Cel mai mare segment din listă = bara de lungime 100%
   const maxSize = () => Math.max(1, ...props.segments.map((seg) => seg.size));
 
   return (
